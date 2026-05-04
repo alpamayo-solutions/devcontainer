@@ -24,6 +24,15 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL https://downloads.1password.com/linux/keys/1password.asc \
+      | gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg \
+    && echo "deb [arch=${ARCH} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/${ARCH} stable main" \
+      > /etc/apt/sources.list.d/1password.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends 1password-cli \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd -g ${DEV_GID} dev \
     && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash dev \
     && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \

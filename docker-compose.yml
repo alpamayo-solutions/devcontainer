@@ -33,6 +33,7 @@ services:
       - dev_host_keys:/etc/ssh-host-keys
     environment:
       TZ: "${TZ:-Europe/Zurich}"
+      OP_SERVICE_ACCOUNT_TOKEN: "${OP_SERVICE_ACCOUNT_TOKEN:-}"
 
 volumes:
   dev_local:
