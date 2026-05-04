@@ -7,6 +7,17 @@ set -e
 mkdir -p /run/sshd
 chmod 0755 /run/sshd
 
+# SSH sessions start under PAM as fresh processes and don't inherit the
+# container's PID-1 environment. Write selected vars (especially the 1Password
+# service account token) into /etc/environment so PAM picks them up. PATH is
+# rewritten too so dev's user-installed binaries are on the default search path.
+{
+    echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/dev/.local/bin:/home/dev/.npm-global/bin"'
+    [ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ] && echo "OP_SERVICE_ACCOUNT_TOKEN=${OP_SERVICE_ACCOUNT_TOKEN}"
+    [ -n "${TZ:-}" ]                       && echo "TZ=${TZ}"
+} > /etc/environment
+chmod 0644 /etc/environment
+
 # Generate SSH host keys once into the persistent volume so the container
 # fingerprint is stable across recreates.
 if [ ! -f /etc/ssh-host-keys/ssh_host_ed25519_key ]; then
