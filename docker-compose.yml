@@ -1,0 +1,60 @@
+name: devcontainer
+
+services:
+  dev:
+    image: ${IMAGE:-ghcr.io/alpamayo-solutions/devcontainer:latest}
+    build:
+      context: .
+      args:
+        NODE_MAJOR: "${NODE_MAJOR:-22}"
+        DEV_UID: "${DEV_UID:-1000}"
+        DEV_GID: "${DEV_GID:-1000}"
+    container_name: ${CONTAINER_NAME:-devcontainer}
+    hostname: ${CONTAINER_NAME:-devcontainer}
+    restart: unless-stopped
+    ports:
+      - "${SSH_PORT:-2222}:22"
+    volumes:
+      # Workspace — bind mount of a host directory.
+      # Files are editable from both sides (host IDE + container shell).
+      - "${WORK_DIR}:/home/dev/work"
+
+      # Authorized keys — read-only bind mount of a single file.
+      # The kernel-enforced :ro flag means the container physically cannot
+      # write to the host file. The entrypoint copies the contents into
+      # /home/dev/.ssh/authorized_keys with proper owner/mode.
+      - type: bind
+        source: ${AUTHORIZED_KEYS_FILE:-./authorized_keys}
+        target: /etc/host-keys/authorized_keys
+        read_only: true
+        bind:
+          create_host_path: false
+
+      # Optional: read-only host gitconfig — copied to /home/dev/.gitconfig
+      # at start. `git config --global` inside the container then edits the
+      # in-container copy without touching the host file.
+      - type: bind
+        source: ${GITCONFIG_FILE:-${HOME}/.gitconfig}
+        target: /etc/host-keys/gitconfig
+        read_only: true
+        bind:
+          create_host_path: false
+
+      # Persistent state (named volumes survive `docker compose down`,
+      # only `down -v` would delete them):
+      - dev_local:/home/dev/.local
+      - dev_npm:/home/dev/.npm-global
+      - dev_cache:/home/dev/.cache
+      - dev_config:/home/dev/.config
+      - dev_ssh:/home/dev/.ssh
+      - dev_host_keys:/etc/ssh-host-keys
+    environment:
+      TZ: "${TZ:-Europe/Zurich}"
+
+volumes:
+  dev_local:
+  dev_npm:
+  dev_cache:
+  dev_config:
+  dev_ssh:
+  dev_host_keys:
