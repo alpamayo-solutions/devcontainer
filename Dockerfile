@@ -6,21 +6,21 @@ ARG DEV_GID=1000
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Create the dev user first so its UID/GID 1000 are reserved before any
-# downstream package (e.g. 1password-cli adds 'onepassword-cli' user) can
+# `passwd` (groupadd/useradd) is not in python:3.12-slim by default. Install
+# it together with the rest, then reserve UID/GID 1000 for the dev user
+# before later packages (e.g. 1password-cli's 'onepassword-cli' user) can
 # claim the same id.
-RUN groupadd -g ${DEV_GID} dev \
-    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash dev \
-    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
-    && chmod 440 /etc/sudoers.d/dev
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl gnupg \
+      ca-certificates curl gnupg passwd \
       git openssh-server sudo \
       build-essential pkg-config \
       vim less jq tmux fish bash-completion \
       iproute2 iputils-ping dnsutils netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -g ${DEV_GID} dev \
+    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash dev \
+    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
+    && chmod 440 /etc/sudoers.d/dev
 
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
       | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg \
