@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# sshd's privilege separation directory must exist at runtime. /run is a
+# tmpfs that gets mounted fresh on container start, so a Dockerfile-time
+# `mkdir` doesn't survive — recreate it here.
+mkdir -p /run/sshd
+chmod 0755 /run/sshd
+
 # Generate SSH host keys once into the persistent volume so the container
 # fingerprint is stable across recreates.
 if [ ! -f /etc/ssh-host-keys/ssh_host_ed25519_key ]; then
