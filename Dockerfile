@@ -6,6 +6,14 @@ ARG DEV_GID=1000
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Create the dev user first so its UID/GID 1000 are reserved before any
+# downstream package (e.g. 1password-cli adds 'onepassword-cli' user) can
+# claim the same id.
+RUN groupadd -g ${DEV_GID} dev \
+    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash dev \
+    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
+    && chmod 440 /etc/sudoers.d/dev
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl gnupg \
       git openssh-server sudo \
@@ -32,11 +40,6 @@ RUN ARCH=$(dpkg --print-architecture) \
     && apt-get update \
     && apt-get install -y --no-install-recommends 1password-cli \
     && rm -rf /var/lib/apt/lists/*
-
-RUN groupadd -g ${DEV_GID} dev \
-    && useradd -m -u ${DEV_UID} -g ${DEV_GID} -s /bin/bash dev \
-    && echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev \
-    && chmod 440 /etc/sudoers.d/dev
 
 RUN mkdir -p /home/dev/.ssh /home/dev/.local/bin /home/dev/.npm-global \
              /home/dev/.cache /home/dev/.config /home/dev/work \
